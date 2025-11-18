@@ -84,13 +84,21 @@ export default function Downloader() {
         throw new Error(data.error);
       }
 
-      if (data.isRedirect) {
-        // Open cobalt.tools in a new tab
-        window.open(data.url, '_blank');
+      if (data.isDirectLink && data.url) {
+        // For direct links, we can try to trigger a download or open in new tab
+        // Note: Browser might play it instead of downloading if headers aren't set to attachment
+        // We can try to create a temporary anchor tag
+        const link = document.createElement('a');
+        link.href = data.url;
+        link.target = '_blank';
+        link.download = data.title || 'download';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
         setStatus('ready');
         setErrorMsg('');
       } else if (data.url) {
-        // Direct download URL
         window.open(data.url, '_blank');
         setStatus('ready');
       }
@@ -107,23 +115,37 @@ export default function Downloader() {
   // };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-8 sm:p-20 font-sans">
-      <main className="max-w-3xl mx-auto flex flex-col gap-8">
-        <Link 
-          href="/" 
-          className="text-sm text-gray-500 hover:text-foreground transition-colors flex items-center gap-2"
-        >
-          ← Back to Tools
-        </Link>
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 font-sans selection:bg-blue-500/30">
+      {/* Header */}
+      <header className="border-b border-gray-200 dark:border-white/10 bg-white/80 dark:bg-black/20 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-[1800px] mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link 
+              href="/" 
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+              </svg>
+            </Link>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg shadow-lg shadow-blue-500/20">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+              </div>
+              <div>
+                <h1 className="font-bold text-lg tracking-tight">Media Downloader</h1>
+                <p className="text-xs text-gray-500 font-medium">YouTube & More</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
 
-        <header className="space-y-2">
-          <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-            Media Downloader
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            Download videos from YouTube and other platforms.
-          </p>
-        </header>
+      <main className="max-w-3xl mx-auto p-4 sm:p-8">
 
         <div className="bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-8 shadow-xl shadow-blue-500/5">
           {/* URL Input Form */}

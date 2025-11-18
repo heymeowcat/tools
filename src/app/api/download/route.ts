@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// List of community Cobalt instances to try
-// Based on instances.cobalt.best and cobalt.directory
-const COBALT_INSTANCES = [
-  'https://cobalt.meowing.de',
-  'https://cobalt-api.kwiatekmiki.com',
-  'https://co.nadeko.net',
-];
+// Configure your Cobalt instance URL here
+// For local instance: http://localhost:9000
+// For your own hosted instance: https://your-domain.com
+const COBALT_INSTANCE = process.env.COBALT_API_URL || 'http://localhost:9000';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,75 +19,65 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Try each instance
-    for (const instance of COBALT_INSTANCES) {
-      try {
-        console.log(`Trying instance: ${instance}`);
-        
-        const payload: any = {
-          url: url,
-        };
+    try {
+      const payload: any = {
+        url: url,
+      };
 
-        // Add quality settings if specified
-        if (isAudioOnly) {
-          payload.isAudioOnly = true;
-        } else if (vQuality) {
-          payload.vQuality = vQuality;
-        }
-
-        console.log('Payload:', payload);
-
-        const response = await fetch(`${instance}/`, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-
-        console.log(`Response status from ${instance}:`, response.status);
-
-        if (!response.ok) {
-          console.error(`HTTP error from ${instance}:`, response.status);
-          continue;
-        }
-
-        const data = await response.json();
-        console.log('Response data:', JSON.stringify(data).substring(0, 200));
-
-        // Check for error status
-        if (data.status === 'error' || data.error) {
-          console.error(`Error from ${instance}:`, data.text || data.error);
-          continue;
-        }
-
-        // Check for direct URL
-        if (data.url) {
-          console.log('Success! Download URL found');
-          return NextResponse.json({ url: data.url });
-        }
-
-        // Some instances might return a 'picker' array for multiple formats
-        if (data.picker && Array.isArray(data.picker) && data.picker.length > 0) {
-          console.log('Success! Using picker URL');
-          return NextResponse.json({ url: data.picker[0].url });
-        }
-
-        console.log(`No valid URL in response from ${instance}`);
-      } catch (err) {
-        console.error(`Failed with instance ${instance}:`, err);
-        continue;
+      // Add quality settings if specified
+      if (isAudioOnly) {
+        payload.isAudioOnly = true;
+      } else if (vQuality) {
+        payload.vQuality = vQuality;
       }
-    }
 
-    // If all instances fail, redirect to cobalt.tools
-    const cobaltUrl = `https://cobalt.tools/?u=${encodeURIComponent(url)}`;
-    return NextResponse.json({
-      url: cobaltUrl,
-      message: 'Community instances unavailable. Redirecting to cobalt.tools.',
-      isRedirect: true
-    });
+      console.log('Calling Cobalt instance:', COBALT_INSTANCE);
+      console.log('Payload:', payload);
+
+      const response = await fetch(`${COBALT_INSTANCE}/`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      console.log('Response status:', response.status);
+
+      if (!response.ok) {
+        throw new Error(`Cobalt instance returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Response data:', JSON.stringify(data).substring(0, 200));
+
+      // Check for error status
+      if (data.status === 'error' || data.error) {
+        throw new Error(data.text || data.error || 'Unknown error from Cobalt');
+      }
+
+      // Check for direct URL
+      if (data.url) {
+        console.log('Success! Download URL found');
+        return NextResponse.json({ url: data.url });
+      }
+
+      // Some instances might return a 'picker' array for multiple formats
+      if (data.picker && Array.isArray(data.picker) && data.picker.length > 0) {
+        console.log('Success! Using picker URL');
+        return NextResponse.json({ url: data.picker[0].url });
+      }
+
+      throw new Error('No download URL in response');
+
+    } catch (err) {
+      console.error('Cobalt API error:', err);
+      return NextResponse.json(
+        { error: `Cobalt instance error: ${(err as Error).message}. Make sure your Cobalt instance is running.` },
+        { status: 500 }
+      );
+    }
 
   } catch (error) {
     console.error('API route error:', error);
