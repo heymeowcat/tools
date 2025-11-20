@@ -57,14 +57,14 @@ export default function Downloader() {
   };
 
   const handleDownload = async () => {
-    if (!url) return;
+    if (!url || !metadata) return;
     setStatus('downloading');
     setErrorMsg('');
 
     try {
       const isAudio = selectedFormat === 'mp3';
       
-      // Call our server-side API route
+      // Call our server-side API route to get the download URL
       const response = await fetch('/api/download', {
         method: 'POST',
         headers: {
@@ -84,23 +84,51 @@ export default function Downloader() {
         throw new Error(data.error);
       }
 
-      if (data.isDirectLink && data.url) {
-        // For direct links, we can try to trigger a download or open in new tab
-        // Note: Browser might play it instead of downloading if headers aren't set to attachment
-        // We can try to create a temporary anchor tag
-        const link = document.createElement('a');
-        link.href = data.url;
-        link.target = '_blank';
-        link.download = data.title || 'download';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      if (data.url) {
+        // Determine file extension based on format
+        const extension = isAudio ? 'mp3' : 'mp4';
         
-        setStatus('ready');
-        setErrorMsg('');
-      } else if (data.url) {
-        window.open(data.url, '_blank');
-        setStatus('ready');
+        // Clean the title for use as filename
+        const cleanTitle = metadata.title
+          .replace(/[/\\?%*:|"<>]/g, '-') // Replace invalid filename characters
+          .replace(/\s+/g, '_') // Replace spaces with underscores
+          .substring(0, 100); // Limit length
+        
+        const filename = `${cleanTitle}.${extension}`;
+        
+        // Use our proxy endpoint to download the file
+        const proxyUrl = `/api/proxy-download?url=${encodeURIComponent(data.url)}&filename=${encodeURIComponent(filename)}`;
+        
+        try {
+          setStatus('downloading'); // Keep status as downloading while fetching blob
+          
+          // Fetch the file content first
+          const fileResponse = await fetch(proxyUrl);
+          
+          if (!fileResponse.ok) {
+            throw new Error(`Download failed: ${fileResponse.statusText}`);
+          }
+          
+          const blob = await fileResponse.blob();
+          const blobUrl = window.URL.createObjectURL(blob);
+          
+          // Create download link
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // Clean up
+          window.URL.revokeObjectURL(blobUrl);
+          
+          setStatus('ready');
+          setErrorMsg('');
+        } catch (downloadError) {
+          console.error('Download error:', downloadError);
+          throw new Error('Failed to download file content');
+        }
       }
     } catch (err) {
       setStatus('error');

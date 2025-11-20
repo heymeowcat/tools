@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Configure your Cobalt instance URL here
-// For local instance: http://localhost:9000
-// For your own hosted instance: https://your-domain.com
+// Cobalt instance - defaults to local, can be overridden with env variable
 const COBALT_INSTANCE = process.env.COBALT_API_URL || 'http://localhost:9000';
 
 export async function POST(request: NextRequest) {
@@ -28,12 +26,13 @@ export async function POST(request: NextRequest) {
       if (isAudioOnly) {
         payload.isAudioOnly = true;
       } else if (vQuality) {
-        payload.vQuality = vQuality;
+        payload.videoQuality = vQuality;
       }
 
       console.log('Calling Cobalt instance:', COBALT_INSTANCE);
       console.log('Payload:', payload);
 
+      // Call Cobalt API
       const response = await fetch(`${COBALT_INSTANCE}/`, {
         method: 'POST',
         headers: {
@@ -46,7 +45,9 @@ export async function POST(request: NextRequest) {
       console.log('Response status:', response.status);
 
       if (!response.ok) {
-        throw new Error(`Cobalt instance returned ${response.status}`);
+        const errorText = await response.text();
+        console.error('Cobalt error response:', errorText);
+        throw new Error(`Cobalt instance returned ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
 
       // Check for error status
       if (data.status === 'error' || data.error) {
-        throw new Error(data.text || data.error || 'Unknown error from Cobalt');
+        throw new Error(data.text || data.error?.code || 'Unknown error from Cobalt');
       }
 
       // Check for direct URL
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       console.error('Cobalt API error:', err);
       return NextResponse.json(
-        { error: `Cobalt instance error: ${(err as Error).message}. Make sure your Cobalt instance is running.` },
+        { error: `Download failed: ${(err as Error).message}` },
         { status: 500 }
       );
     }
