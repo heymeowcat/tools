@@ -14,30 +14,7 @@ export default function Home() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Downloader Card */}
-          <Link
-            href="/downloader"
-            className="group relative block p-8 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl hover:border-blue-500/50 dark:hover:border-blue-400/50 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1 overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            
-            <div className="relative z-10 flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-2xl">
-                ⬇️
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                  Downloader
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Download videos and media from various sources including YouTube. Simple and fast.
-                </p>
-              </div>
-              <div className="mt-auto pt-4 flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
-                Open Tool <span>→</span>
-              </div>
-            </div>
-          </Link>
+
 
           {/* JSON Visualizer Card */}
           <Link
