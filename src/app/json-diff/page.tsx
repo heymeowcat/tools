@@ -337,6 +337,9 @@ export default function JsonDiffPage() {
               viewMode={viewMode}
               activeDiffIndex={activeDiffIndex}
               onActiveDiffChange={setActiveDiffIndex}
+              leftText={leftInput}
+              rightText={rightInput}
+              isPlainTextMode={isPlainTextMode}
             />
           </div>
         )}

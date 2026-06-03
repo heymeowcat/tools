@@ -258,3 +258,155 @@ export function computeAlignedDiff(
 
   return { rows, addedCount, removedCount, modifiedCount };
 }
+
+/**
+ * Tracks the structural JSON path (e.g. ["config", "shortcuts", "compare"]) for each line of a formatted JSON.
+ */
+export function buildLinePaths(jsonText: string): string[][] {
+  const lines = jsonText.split('\n');
+  const paths: string[][] = [];
+  const stack: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Check if this line is closing an object/array
+    const isClose = line.startsWith('}') || line.startsWith(']');
+    if (isClose && stack.length > 0) {
+      stack.pop();
+    }
+
+    // Determine key names on this line
+    let currentKey: string | null = null;
+    const keyMatch = line.match(/"([^"]+)"\s*:/);
+    if (keyMatch) {
+      currentKey = keyMatch[1];
+    }
+
+    const linePath = currentKey !== null ? [...stack, currentKey] : [...stack];
+    paths.push(linePath);
+
+    // Check if this line opens a new object/array
+    const isOpen = line.endsWith('{') || line.endsWith('[') || line.endsWith('{,') || line.endsWith('[,') || line.endsWith('},') || line.endsWith('],');
+    if (isOpen) {
+      if (currentKey !== null) {
+        stack.push(currentKey);
+      } else {
+        // Nested array/object opening without key
+        if (i > 0) {
+          stack.push(`[${stack.length}]`);
+        }
+      }
+    }
+  }
+
+  return paths;
+}
+
+export interface DiffTreeNode {
+  key: string;
+  changeType: 'added' | 'removed' | 'modified' | 'none';
+  rowIndex: number;
+  children: Map<string, DiffTreeNode>;
+}
+
+/**
+ * Recursively builds a tree representing all the modified, added, and deleted nodes in the JSON structure.
+ */
+export function buildDiffTree(
+  rows: AlignedRow[],
+  leftText: string,
+  rightText: string,
+  isPlainTextMode: boolean
+): DiffTreeNode {
+  const root: DiffTreeNode = {
+    key: 'root',
+    changeType: 'none',
+    rowIndex: -1,
+    children: new Map(),
+  };
+
+  if (isPlainTextMode) {
+    // Plain text mode has no key paths, list lines that changed directly
+    rows.forEach((row) => {
+      const hasDiff = row.left.type !== 'unchanged' || row.right.type !== 'unchanged';
+      if (hasDiff) {
+        const type = row.right.type === 'added' ? 'added' : (row.left.type === 'removed' ? 'removed' : 'modified');
+        const lineName = `Line ${row.left.lineNumber || row.right.lineNumber}`;
+        root.children.set(lineName, {
+          key: lineName,
+          changeType: type,
+          rowIndex: row.index,
+          children: new Map(),
+        });
+      }
+    });
+    return root;
+  }
+
+  let leftFormatted = leftText;
+  let rightFormatted = rightText;
+
+  try {
+    const leftParsed = JSON.parse(leftText);
+    leftFormatted = JSON.stringify(leftParsed, null, 2);
+  } catch {
+    // use as is
+  }
+
+  try {
+    const rightParsed = JSON.parse(rightText);
+    rightFormatted = JSON.stringify(rightParsed, null, 2);
+  } catch {
+    // use as is
+  }
+
+  const leftPaths = buildLinePaths(leftFormatted);
+  const rightPaths = buildLinePaths(rightFormatted);
+
+  rows.forEach((row) => {
+    const hasDiff = row.left.type !== 'unchanged' || row.right.type !== 'unchanged';
+    if (!hasDiff) return;
+
+    let path: string[] = [];
+    if (row.right.lineNumber && row.right.lineNumber - 1 < rightPaths.length) {
+      path = rightPaths[row.right.lineNumber - 1];
+    } else if (row.left.lineNumber && row.left.lineNumber - 1 < leftPaths.length) {
+      path = leftPaths[row.left.lineNumber - 1];
+    }
+
+    if (path.length === 0) return;
+
+    let current = root;
+    for (let depth = 0; depth < path.length; depth++) {
+      const segment = path[depth];
+      const isLeaf = depth === path.length - 1;
+
+      let child = current.children.get(segment);
+      if (!child) {
+        child = {
+          key: segment,
+          changeType: 'none',
+          rowIndex: -1,
+          children: new Map(),
+        };
+        current.children.set(segment, child);
+      }
+
+      if (isLeaf) {
+        const type =
+          row.right.type === 'added'
+            ? 'added'
+            : row.left.type === 'removed'
+            ? 'removed'
+            : 'modified';
+        child.changeType = type;
+        child.rowIndex = row.index;
+      }
+
+      current = child;
+    }
+  });
+
+  return root;
+}
