@@ -83,6 +83,7 @@ export default function JsonDiffPage() {
   const [stats, setStats] = useState({ added: 0, removed: 0, modified: 0 });
   const [diffIndices, setDiffIndices] = useState<number[]>([]);
   const [activeDiffIndex, setActiveDiffIndex] = useState(-1);
+  const [scrollTrigger, setScrollTrigger] = useState(0);
 
   // Trigger loading sample data on mount
   useEffect(() => {
@@ -163,6 +164,7 @@ export default function JsonDiffPage() {
     setStats({ added: 0, removed: 0, modified: 0 });
     setDiffIndices([]);
     setActiveDiffIndex(-1);
+    setScrollTrigger(0);
   };
 
   // Format Helper
@@ -187,15 +189,21 @@ export default function JsonDiffPage() {
     }
   };
 
+  // Scroll navigation helper
+  const navigateToDiff = (index: number) => {
+    setActiveDiffIndex(index);
+    setScrollTrigger((prev) => prev + 1);
+  };
+
   // Diff Navigation
   const handleNextDiff = () => {
     if (diffIndices.length === 0) return;
-    setActiveDiffIndex((prev) => (prev + 1) % diffIndices.length);
+    navigateToDiff((activeDiffIndex + 1) % diffIndices.length);
   };
 
   const handlePrevDiff = () => {
     if (diffIndices.length === 0) return;
-    setActiveDiffIndex((prev) => (prev - 1 + diffIndices.length) % diffIndices.length);
+    navigateToDiff((activeDiffIndex - 1 + diffIndices.length) % diffIndices.length);
   };
 
   const hasErrors = !isPlainTextMode && (leftError !== null || rightError !== null);
@@ -336,7 +344,8 @@ export default function JsonDiffPage() {
               rows={alignedRows}
               viewMode={viewMode}
               activeDiffIndex={activeDiffIndex}
-              onActiveDiffChange={setActiveDiffIndex}
+              onActiveDiffChange={navigateToDiff}
+              scrollTrigger={scrollTrigger}
               leftText={leftInput}
               rightText={rightInput}
               isPlainTextMode={isPlainTextMode}

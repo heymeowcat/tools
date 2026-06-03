@@ -7,6 +7,7 @@ interface DiffViewerProps {
   viewMode: 'split' | 'unified';
   activeDiffIndex: number;
   onActiveDiffChange: (index: number) => void;
+  scrollTrigger: number;
   leftText: string;
   rightText: string;
   isPlainTextMode: boolean;
@@ -89,6 +90,7 @@ export function DiffViewer({
   viewMode,
   activeDiffIndex,
   onActiveDiffChange,
+  scrollTrigger,
   leftText,
   rightText,
   isPlainTextMode,
@@ -217,7 +219,7 @@ export function DiffViewer({
 
   const rowGroups = getRowGroups();
 
-  // Scroll to active diff row when activeDiffIndex changes
+  // Scroll to active diff row when scrollTrigger increments
   useEffect(() => {
     if (activeDiffIndex >= 0 && activeDiffIndex < diffRowsIndices.length) {
       const rowIndex = diffRowsIndices[activeDiffIndex];
@@ -229,7 +231,8 @@ export function DiffViewer({
         });
       }
     }
-  }, [activeDiffIndex, diffRowsIndices]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollTrigger]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     setShowScrollTop(e.currentTarget.scrollTop > 200);

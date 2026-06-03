@@ -90,6 +90,14 @@ export function DiffEditor({
 
   const styles = accentStyles[accentColor];
 
+  const lineNumbersRef = useRef<HTMLDivElement>(null);
+
+  const handleTextareaScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = e.currentTarget.scrollTop;
+    }
+  };
+
   return (
     <div
       onDragOver={handleDragOver}
@@ -172,7 +180,10 @@ export function DiffEditor({
       {/* Editor Body */}
       <div className="relative flex-1 flex overflow-hidden">
         {/* Line numbers container (visual helper) */}
-        <div className="hidden sm:flex flex-col text-right select-none py-4 px-2 border-r border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.01] text-gray-300 dark:text-gray-600 font-mono text-xs leading-6 min-w-10">
+        <div 
+          ref={lineNumbersRef}
+          className="hidden sm:flex flex-col text-right select-none py-4 px-2 border-r border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.01] text-gray-300 dark:text-gray-600 font-mono text-xs leading-6 min-w-10 overflow-hidden h-full"
+        >
           {Array.from({ length: Math.max(1, lineCount) }).map((_, i) => (
             <div key={i}>{i + 1}</div>
           ))}
@@ -182,6 +193,7 @@ export function DiffEditor({
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onScroll={handleTextareaScroll}
           placeholder={placeholder}
           className="flex-1 w-full p-4 bg-transparent text-sm font-mono text-gray-800 dark:text-gray-300 resize-none focus:outline-none placeholder:text-gray-400 dark:placeholder:text-gray-600 leading-6 overflow-auto custom-scrollbar"
           spellCheck={false}
