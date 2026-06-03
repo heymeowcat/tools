@@ -41,6 +41,32 @@ export default function Home() {
               </div>
             </div>
           </Link>
+
+          {/* JSON Diff Card */}
+          <Link
+            href="/json-diff"
+            className="group relative block p-8 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl hover:border-indigo-500/50 dark:hover:border-indigo-400/50 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            
+            <div className="relative z-10 flex flex-col gap-4">
+              <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-2xl">
+                {/* Diff Icon representation */}
+                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{"≠"}</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  JSON Diff & Compare
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Compare two JSON structures side-by-side. Spot key additions, deletions, value changes, and semantic differences.
+                </p>
+              </div>
+              <div className="mt-auto pt-4 flex items-center text-sm font-medium text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+                Open Tool <span>→</span>
+              </div>
+            </div>
+          </Link>
         </div>
       </main>
     </div>
